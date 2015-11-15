@@ -21,13 +21,9 @@ class Conversion {
 		// do nothing
 	}
 
-	public function To($fmt, $inFile, $outFile) {
-		if (file_exists($outFile)) {
-			return;
-		}
-
+	public static function To($fmt, $inFile, $outFile) {
 		if (in_array($fmt, self::$_supportedFormats['audio']) || in_array($fmt, self::$_supportedFormats['video'])) {
-			$cmd = "ffmpeg -i {$inFile} {$outFile}";
+			$cmd = "ffmpeg -i {$inFile} -b:a 128K {$outFile}";
 			exec($cmd); 
 		} else {
 			throw new Format("Unsupported format");

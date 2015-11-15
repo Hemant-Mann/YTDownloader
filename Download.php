@@ -48,8 +48,11 @@ class Download {
 	}
 
 	public function convert($fmt = "mp3") {
-		$this->haveVideo();
 		$this->_converted = $this->_root . $this->_videoId . ".{$fmt}";
+		if (file_exists($this->_converted)) {
+			return;
+		}
+		$this->haveVideo();
 		Conversion::To($fmt, $this->_file, $this->_converted);
 	}
 
