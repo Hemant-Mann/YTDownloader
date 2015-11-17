@@ -1,6 +1,7 @@
 <?php
 
 namespace YTDownloader;
+use YTDownloader\Exceptions\YTDL as YTDL;
 
 class Download {
 	/**
@@ -33,6 +34,12 @@ class Download {
 	 */
 	private $_root;
 
+	/**
+	 * Stores the available video qualities
+	 * @var string
+	 */
+	protected $_formats;
+
 	public function __construct($url) {
 		$this->_url = $url;
 		$this->_root = dirname(__FILE__) . "/downloads/";
@@ -40,11 +47,59 @@ class Download {
 		$this->_file = $this->_root . $this->_videoId . ".mp4";
 	}
 
-	protected function haveVideo() {
+	protected function haveVideo($code = 22) {
 		if (!file_exists($this->_file)) {
-			$cmd = "youtube-dl -f 18 -o ". $this->_file . " " . $this->_url;
-			exec($cmd);	
+			$cmd = "youtube-dl -f {$code} -o ". $this->_file . " " . $this->_url;
+			exec($cmd, $output, $return);
+
+			if ($return !=0) {
+				throw new YTDL("Can't download video");
+			}
 		}
+	}
+
+	protected function _getAvailableQualities() {
+		$cmd = "youtube-dl -F --no-warnings ". $this->_url;
+		exec($cmd, $output, $return);
+
+		if ($return != 0) {
+			throw new YTDL("Can't get available video formats");
+		}
+
+		foreach ($output as $key => $value) {
+			if ($key < 5) {
+				continue;
+			}
+
+			preg_match("/x([0-9]{3,4})$/", $value, $match);
+			if ($match[1]) {
+				$code = (int) substr($value, 0, 3);
+				switch ($match[1]) {
+					case '144':
+						$this->_formats['144'] = $code;
+						break;
+					
+					case '240':
+						if (strstr($value, 'flv') !== FALSE) {
+							$this->_formats['240']['flv'] = $code;
+						} elseif (strstr($value, '3gp') !== FALSE) {
+							$this->_formats['240']['3gp'] = $code;
+						} else {
+							$this->_formats['240']['mp4'] = $code;
+						}
+						break;
+
+					case '360':
+						if (strstr($value, 'mp4') !== FALSE) {
+							$this->_formats['360']['mp4'] = $code;
+						} elseif (strstr($value, 'webm') !== FALSE) {
+							$this->_formats['360']['webm'] = $code;
+						}
+						break;
+				}
+			}
+		}
+		$this->_formats['720'] = 22;
 	}
 
 	public function convert($fmt = "mp3") {
@@ -74,5 +129,22 @@ class Download {
 
 	public function getFile() {
 		return $this->_converted;
+	}
+
+	public function getVideo() {
+		$this->haveVideo();
+		return $this->_file;
+	}
+
+	/**
+	 * Returns an array of available qualities
+	 */
+	public function availableQualities() {
+		$this->_getAvailableQualities();
+		$return = array();
+		foreach ($this->_formats as $key => $value) {
+			$return[$key."p"] = $value;
+		}
+		return $return;
 	}
 }
