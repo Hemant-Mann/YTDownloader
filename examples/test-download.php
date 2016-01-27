@@ -5,7 +5,7 @@ require '../autoloader.php';
 $url = 'https://www.youtube.com/watch?v=oeCihv9A3ac';
 
 $track = 'Eminem - Phenomenal';
-$download = new YTDownloader\Download($url, $track);
+$download = new YTDownloader\Service\Download($url, $track);
 $download->convert();
 
 $file = $download->getFile(); // Name of the downloaded file

@@ -24,6 +24,12 @@ class Download {
 	private $_videoId;
 
 	/**
+	 * Stores different video formats
+	 * @var array
+	 */
+	private $_formats;
+
+	/**
 	 * Downloaded Video File Name
 	 * @var string
 	 */
@@ -37,7 +43,7 @@ class Download {
 
 	public function __construct($id) {
 		$url = "https://www.youtube.com/watch?v=";
-		$id = $url . Video::getId($id);
+		$id = Video::getId($url . $id);
 		
 		if ($id === false) {
 			throw new YTDL("Invalid Youtube ID");
@@ -61,10 +67,10 @@ class Download {
 		}
 	}
 
-	protected function _getAvailableQualities() {
+	protected function _availableQualities() {
 		$cmd = "youtube-dl -F --no-warnings ". $this->_url;
 		exec($cmd, $output, $return);
-
+		
 		if ($return != 0) {
 			throw new YTDL("Can't get available video formats");
 		}
@@ -74,35 +80,17 @@ class Download {
 				continue;
 			}
 
-			preg_match("/x([0-9]{3,4})$/", $value, $match);
+			preg_match("/x([0-9]{3,4})/", $value, $match);
+
 			if ($match[1]) {
 				$code = (int) substr($value, 0, 3);
-				switch ($match[1]) {
-					case '144':
-						$this->_formats['144'] = $code;
-						break;
-					
-					case '240':
-						if (strstr($value, 'flv') !== FALSE) {
-							$this->_formats['240']['flv'] = $code;
-						} elseif (strstr($value, '3gp') !== FALSE) {
-							$this->_formats['240']['3gp'] = $code;
-						} else {
-							$this->_formats['240']['mp4'] = $code;
-						}
-						break;
 
-					case '360':
-						if (strstr($value, 'mp4') !== FALSE) {
-							$this->_formats['360']['mp4'] = $code;
-						} elseif (strstr($value, 'webm') !== FALSE) {
-							$this->_formats['360']['webm'] = $code;
-						}
-						break;
+				if (!preg_match("/DASH\s(video|audio)/", $value)) {
+					preg_match("/^[0-9]{0,3}\s*(\w+)/", $value, $f);
+					$this->_formats[$match[1]][$f[1]] = $code;	
 				}
 			}
 		}
-		$this->_formats['720'] = 22;
 	}
 
 	public function convert($fmt = "mp3") {
@@ -146,7 +134,7 @@ class Download {
 	 * Returns an array of available qualities
 	 */
 	public function availableQualities() {
-		$this->_getAvailableQualities();
+		$this->_availableQualities();
 		$return = array();
 		foreach ($this->_formats as $key => $value) {
 			$return[$key."p"] = $value;
