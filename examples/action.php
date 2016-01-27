@@ -4,9 +4,9 @@ require '../autoloader.php';
 $check = $_POST['check'];
 if (isset($check) && $check == "submitForm") {
 	$action = $_POST['action'];
-	$url = $_POST['url'];
+	$videoId = $_POST['videoId'];
 	
-	$youtube = new YTDownloader\Download($url);
+	$youtube = new YTDownloader\Download($videoId);
 	$response = array();
 	switch ($action) {
 		case 'all':

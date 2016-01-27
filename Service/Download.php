@@ -1,8 +1,15 @@
 <?php
 
-namespace YTDownloader;
-use YTDownloader\Exceptions\YTDL as YTDL;
+namespace YTDownloader\Service;
 
+use YTDownloader\Exceptions\YTDL as YTDL;
+use YTDownloader\Helper\Video as Video;
+use YTDownloader\Helper\Convert as Convert;
+
+/**
+ * This class will download youtube video
+ * @param string $id Youtube VideoID of the video
+ */
 class Download {
 	/**
 	 * Stores the Youtube URL
@@ -23,28 +30,24 @@ class Download {
 	private $_file;
 
 	/**
-	 * Converted Video file name
-	 * @var string
-	 */
-	private $_converted;
-
-	/**
 	 * Stores the default download location
 	 * @var string
 	 */
-	private $_root;
+	private static $_root = null;
 
-	/**
-	 * Stores the available video qualities
-	 * @var string
-	 */
-	protected $_formats;
+	public function __construct($id) {
+		$url = "https://www.youtube.com/watch?v=";
+		$id = $url . Video::getId($id);
+		
+		if ($id === false) {
+			throw new YTDL("Invalid Youtube ID");
+		}
 
-	public function __construct($url) {
-		$this->_url = $url;
-		$this->_root = dirname(__FILE__) . "/downloads/";
-		$this->_videoId = Helper::getVideoId($this->_url);
-		$this->_file = $this->_root . $this->_videoId . ".mp4";
+		if (!self::$_root) {
+			$this->getDownloadPath();
+		}
+		$this->_url = $url . $id;
+		$this->_videoId = $id;
 	}
 
 	protected function haveVideo($code = 22) {
@@ -103,16 +106,16 @@ class Download {
 	}
 
 	public function convert($fmt = "mp3") {
-		$this->_converted = $this->_root . $this->_videoId . ".{$fmt}";
+		$this->_converted = self::$_root . $this->_videoId . ".{$fmt}";
 		if (file_exists($this->_converted)) {
 			return;
 		}
 		$this->haveVideo();
-		Conversion::To($fmt, $this->_file, $this->_converted);
+		Convert::To($fmt, $this->_file, $this->_converted);
 	}
 
 	public function getUrl() {
-		return $_url;
+		return $this->_url;
 	}
 
 	public function getVideoId() {
@@ -120,11 +123,14 @@ class Download {
 	}
 
 	public function setDownloadPath($path) {
-		$this->_root = $path;
+		self::$_root = $path;
 	}
 
 	public function getDownloadPath() {
-		return $this->_root;
+		if (!isset(self::$_root)) {
+			self::$_root = dirname(dirname(__FILE__)) . "/downloads/";
+		}
+		return self::$_root;
 	}
 
 	public function getFile() {

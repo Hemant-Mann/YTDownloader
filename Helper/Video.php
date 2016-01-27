@@ -1,16 +1,22 @@
 <?php
+namespace YTDownloader\Helper;
 
-namespace YTDownloader;
+class Video {
+	private function __construct() {
+		// do nothing
+	}
 
-class Helper {
+	private function __clone() {
+		// do nothing
+	}
 
 	/**
 	 * Get youtube video ID from URL
 	 *
-	 * @param string $url
-	 * @return string Youtube video id or FALSE if none found. 
+	 * @param string $url Youtube URL of the video
+	 * @return string|boolean Youtube video id or FALSE if none found. 
 	 */
-	public static function getVideoId($url) {
+	public static function getId($url) {
 		$pattern = 
 		    '%^# Match any youtube URL
 		    (?:https?://)?  # Optional scheme. Either http or https

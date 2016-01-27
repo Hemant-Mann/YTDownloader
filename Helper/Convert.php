@@ -1,9 +1,9 @@
 <?php
 
-namespace YTDownloader;
+namespace YTDownloader\Helper;
 use YTDownloader\Exceptions\Format;
 
-class Conversion {
+class Convert {
 	private static $_supportedFormats = array(
 		'audio' => array(
 			'mp2', 'mp3', '3gp'
