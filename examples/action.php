@@ -8,15 +8,23 @@ if (isset($check) && $check == "submitForm") {
 	
 	$youtube = new YTDownloader\Service\Download($videoId);
 	$response = array();
+
 	try {
 		switch ($action) {
-			case 'all':
+			case 'qualities':
 				$response = $youtube->availableQualities();
 				break;
 			
-			case 'best':
+			case 'downloadBest':
 				$file = $youtube->getVideo();
-				$response['success'] = true;
+				$response['download'] = true;
+				$response['file'] = $file;
+				break;
+
+			case 'download':
+				$quality = $_POST['quality'];
+				$file = $youtube->download($quality, 'mp4');
+				$response['download'] = true;
 				$response['file'] = $file;
 				break;
 		}

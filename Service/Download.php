@@ -56,15 +56,19 @@ class Download {
 		$this->_videoId = $id;
 	}
 
-	protected function haveVideo($code = 22) {
-		if (!file_exists($this->_file)) {
-			$cmd = "youtube-dl -f {$code} -o ". $this->_file . " " . $this->_url;
+	protected function _download($code, $extension) {
+		$fileName = $this->_videoId . "-{$code}" . ".{$extension}";
+		$file = $this->_root . $fileName;
+
+		if (!file_exists($file)) {
+			$cmd = "youtube-dl -f {$code} -o $file " . $this->_url;
 			exec($cmd, $output, $return);
 
-			if ($return !=0) {
+			if ($return != 0) {
 				throw new YTDL("Can't download video");
 			}
 		}
+		return $fileName;
 	}
 
 	protected function _availableQualities() {
@@ -102,10 +106,6 @@ class Download {
 		Convert::To($fmt, $this->_file, $this->_converted);
 	}
 
-	public function getUrl() {
-		return $this->_url;
-	}
-
 	public function getVideoId() {
 		return $this->_videoId;
 	}
@@ -140,5 +140,12 @@ class Download {
 			$return[$key."p"] = $value;
 		}
 		return $return;
+	}
+
+	/**
+	 * downloads a video of given quality
+	 */
+	public function download($code, $extension) {
+		return $this->_download($code, $extension);
 	}
 }
