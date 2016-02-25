@@ -1,7 +1,7 @@
 <?php
 
 namespace YTDownloader\Helper;
-use YTDownloader\Exceptions\Format;
+use YTDownloader\Exceptions\Argument;
 
 class Convert {
 	private static $_supportedFormats = array(
@@ -26,7 +26,7 @@ class Convert {
 			$cmd = "ffmpeg -i {$inFile} -b:a 128K {$outFile}";
 			exec($cmd); 
 		} else {
-			throw new Format("Unsupported format");
+			throw new Argument('Unsupported $format argument');
 		}
 	}
 }

@@ -5,10 +5,11 @@ namespace YTDownloader\Service;
 use YTDownloader\Exceptions\YTDL as YTDL;
 use YTDownloader\Helper\Video as Video;
 use YTDownloader\Helper\Convert as Convert;
+use YTDownloader\Helper\Regex as Regex;
 
 /**
  * This class will download youtube video
- * @param string $id Youtube VideoID of the video
+ * @param string $url Youtube Video URL
  */
 class Download {
 	/**
@@ -41,24 +42,24 @@ class Download {
 	 */
 	private static $_root = null;
 
-	public function __construct($id) {
-		$url = "https://www.youtube.com/watch?v=";
-		$id = Video::getId($url . $id);
+	public function __construct($url) {
+		$id = Video::getId($url);
+		$url = "https://www.youtube.com/watch?v="; // manually fix the url to prevent shell injection
 		
 		if ($id === false) {
 			throw new YTDL("Invalid Youtube ID");
 		}
 
 		if (!self::$_root) {
-			$this->getDownloadPath();
+			self::getDownloadPath();
 		}
 		$this->_url = $url . $id;
 		$this->_videoId = $id;
 	}
 
-	protected function _download($code, $extension) {
+	protected function _download($code = 22, $extension = "mp4") {
 		$fileName = $this->_videoId . "-{$code}" . ".{$extension}";
-		$file = $this->_root . $fileName;
+		$file = self::$_root . $fileName;
 
 		if (!file_exists($file)) {
 			$cmd = "youtube-dl -f {$code} -o $file " . $this->_url;
@@ -68,9 +69,14 @@ class Download {
 				throw new YTDL("Can't download video");
 			}
 		}
+		$this->_file = $file;
 		return $fileName;
 	}
 
+	/**
+	 * Executes the shell command for finding available video formats and
+	 * parses the result using regular expression
+	 */
 	protected function _availableQualities() {
 		$cmd = "youtube-dl -F --no-warnings ". $this->_url;
 		exec($cmd, $output, $return);
@@ -97,12 +103,16 @@ class Download {
 		}
 	}
 
+	/**
+	 * Converts the video to given format
+	 */
 	public function convert($fmt = "mp3") {
+		Regex::validate(array('extension' => $fmt));
 		$this->_converted = self::$_root . $this->_videoId . ".{$fmt}";
 		if (file_exists($this->_converted)) {
 			return;
 		}
-		$this->haveVideo();
+		$this->_download();
 		Convert::To($fmt, $this->_file, $this->_converted);
 	}
 
@@ -110,11 +120,11 @@ class Download {
 		return $this->_videoId;
 	}
 
-	public function setDownloadPath($path) {
-		self::$_root = $path;
+	public static function setDownloadPath($path) {
+		self::$_root = basename($path);
 	}
 
-	public function getDownloadPath() {
+	public static function getDownloadPath() {
 		if (!isset(self::$_root)) {
 			self::$_root = dirname(dirname(__FILE__)) . "/downloads/";
 		}
@@ -125,13 +135,8 @@ class Download {
 		return $this->_converted;
 	}
 
-	public function getVideo() {
-		$this->haveVideo();
-		return $this->_file;
-	}
-
 	/**
-	 * Returns an array of available qualities
+	 * @return array Returns an array of available qualities
 	 */
 	public function availableQualities() {
 		$this->_availableQualities();
@@ -144,8 +149,15 @@ class Download {
 
 	/**
 	 * downloads a video of given quality
+	 * @param int $code Youtube Video code
+	 * @param string $extension Video extension
+	 * @return string Returns the name of the downloaded file
 	 */
 	public function download($code, $extension) {
+		Regex::validate(array(
+			'videoCode' => $code,
+			'extension' => $extension
+		));
 		return $this->_download($code, $extension);
 	}
 }
