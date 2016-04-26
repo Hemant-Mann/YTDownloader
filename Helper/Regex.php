@@ -47,7 +47,7 @@ class Regex {
 	}
 
 	private static function _validateCode($value) {
-		return self::match("/^[0-9]{2,4}$/", $value);
+		return self::match("/^[0-9]{1,4}$/", $value);
 	}
 
 	private static function _validateExtension($value) {
