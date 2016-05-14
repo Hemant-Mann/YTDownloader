@@ -40,26 +40,30 @@ class Download {
 	 * Stores the default download location
 	 * @var string
 	 */
-	private static $_root = null;
+	private static $_location = null;
 
 	public function __construct($url) {
 		$id = Video::getId($url);
-		$url = "https://www.youtube.com/watch?v="; // manually fix the url to prevent shell injection
+		$url = "https://www.youtube.com/watch?v="; // manually fix the url
 		
 		if ($id === false) {
 			throw new YTDL("Invalid Youtube ID");
 		}
 
-		if (!self::$_root) {
+		if (!self::$_location) {
 			self::getDownloadPath();
 		}
 		$this->_url = $url . $id;
 		$this->_videoId = $id;
 	}
 
+	/**
+	 * Downloades the video using youtube-dl
+	 * @return string Filename of the downloaded file
+	 */
 	protected function _download($code = 18, $extension = "mp4") {
 		$fileName = $this->_videoId . "-{$code}" . ".{$extension}";
-		$file = self::$_root . $fileName;
+		$file = self::$_location . $fileName;
 
 		if (!file_exists($file)) {
 			$cmd = "youtube-dl -f {$code} -o $file " . $this->_url;
@@ -86,9 +90,7 @@ class Download {
 		}
 
 		foreach ($output as $key => $value) {
-			if ($key < 5) {
-				continue;
-			}
+			if ($key < 5) continue;
 
 			preg_match("/x([0-9]{3,4})/", $value, $match);
 
@@ -109,10 +111,11 @@ class Download {
 	public function convert($fmt = "mp3") {
 		Regex::validate(array('extension' => $fmt));
 		$filename = $this->_videoId . ".{$fmt}";
-		$this->_converted = self::$_root . $filename;
+		$this->_converted = self::$_location . $filename;
 		if (!file_exists($this->_converted)) {
 			$this->_download();
 			Convert::To($fmt, $this->_file, $this->_converted);
+			unlink($this->_file); // remove the video used for converting
 		}
 		return $filename;
 	}
@@ -122,18 +125,14 @@ class Download {
 	}
 
 	public static function setDownloadPath($path) {
-		self::$_root = basename($path);
+		self::$_location = basename($path);
 	}
 
 	public static function getDownloadPath() {
-		if (!isset(self::$_root)) {
-			self::$_root = dirname(dirname(__FILE__)) . "/downloads/";
+		if (!isset(self::$_location)) {
+			self::$_location = dirname(dirname(__FILE__)) . "/downloads/";
 		}
-		return self::$_root;
-	}
-
-	public function getFile() {
-		return $this->_converted;
+		return self::$_location;
 	}
 
 	/**

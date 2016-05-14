@@ -30,13 +30,15 @@ chmod 777 downloads/
 <?php
 require 'autoloader.php';
 use YTDownloader\Service\Download as Downloader;
+use YTDownloader\Helper\Convert as Convert;
 
-$yid = 'YykjpeuMNEk'; // pass the youtube video ID
-$url = "https://www.youtube.com/watch?v=";
+$url = "https://www.youtube.com/watch?v=YykjpeuMNEk";
 
 try {
-  $ytdl = new Downloader($url . $yid);
+  $ytdl = new Downloader($url);
   
+  // Get Available Qualities
+  // $q = $ytdl->availableQualities();
   
   // download the video
   $quality = 22; $extension = 'mp4';
@@ -44,6 +46,7 @@ try {
   // $file = $ytdl->download($quality, $extension);
   
   // Make mp3 from the video
+  // Convert::$quality = "128K"; // Set Mp3 Bitrate (optional)
   $file = $ytdl->convert();
   
   $file = Downloader::getDownloadPath() . $file;
@@ -52,5 +55,3 @@ try {
 } catch (\Exception $e) {
   echo print_r($e, true);
 }
-
-?>

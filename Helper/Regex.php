@@ -4,6 +4,9 @@ namespace YTDownloader\Helper;
 use YTDownloader\Exceptions\Argument;
 use YTDownloader\Exceptions\Core;
 
+/**
+ * Class to validate youtube video codes and media extensions
+ */
 class Regex {
 	private static $_types = array(
 		'videoCode' => array(
@@ -38,7 +41,7 @@ class Regex {
 			}
 
 			$func = self::$_types[$key]['handler'];
-			$return = call_user_func(array(__NAMESPACE__ .'\Regex', $func), $value);
+			$return = call_user_func(array(get_called_class(), $func), $value);
 
 			if (!$return) {
 				throw new Argument(self::$_types[$key]['message']);
