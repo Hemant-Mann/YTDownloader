@@ -60,6 +60,7 @@ class Download {
 	/**
 	 * Downloades the video using youtube-dl
 	 * @return string Filename of the downloaded file
+	 * Ensure "youtube-dl" is in your $PATH
 	 */
 	protected function _download($code = 18, $extension = "mp4") {
 		$fileName = $this->_videoId . "-{$code}" . ".{$extension}";
@@ -80,6 +81,7 @@ class Download {
 	/**
 	 * Executes the shell command for finding available video formats and
 	 * parses the result using regular expression
+	 * Ensure "youtube-dl" is in your $PATH
 	 */
 	protected function _availableQualities() {
 		$cmd = "youtube-dl -F --no-warnings ". $this->_url;
@@ -125,7 +127,10 @@ class Download {
 	}
 
 	public static function setDownloadPath($path) {
-		self::$_location = basename($path);
+		if (!is_dir($path)) {
+			throw new YTDL("Invalid Download Location Specified!!");
+		}
+		self::$_location = $path;
 	}
 
 	public static function getDownloadPath() {

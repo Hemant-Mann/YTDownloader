@@ -5,10 +5,12 @@ require '../autoloader.php';
 $url = 'https://www.youtube.com/watch?v=oeCihv9A3ac';
 
 $track = 'Eminem - Phenomenal';
-$download = new YTDownloader\Service\Download($url, $track);
-$download->convert();
+$download = new YTDownloader\Service\Download($url);
 
-$file = $download->getFile(); // Name of the downloaded file
+YTDownloader\Helper\Convert::$quality = "256K";
+$file = $download->convert();
+
+$file = YTDownloader::getDownloadPath() . $file;
 header('Content-type: audio/mpeg');
 header('Content-length: ' . filesize($file));
 header('Content-Disposition: attachment; filename="'.$track.'.mp3"');
