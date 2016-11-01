@@ -1,7 +1,7 @@
 <?php
 require '../autoloader.php';
 
-$check = $_POST['check']; $action = null; $response = array(); $videoId = null;
+$check = @$_POST['check']; $action = null; $response = array(); $videoId = null;
 if (isset($check) && $check == "submitForm") {
     $action = $_POST['action'];
     $videoId = $_POST['videoId'];
@@ -12,6 +12,7 @@ if (isset($check) && $check == "submitForm") {
         switch ($action) {
             case 'qualities':
                 $response = $youtube->availableQualities();
+                // $youtube->bestMp3; (Contains the code for best mp3 video)
                 break;
             
             case 'downloadBest':
@@ -79,7 +80,7 @@ if (isset($check) && $check == "submitForm") {
                                     </ul>
                                 <?php endforeach ?>
                             <?php else: ?>
-                            <?php echo $response['error']; ?>
+                            <?php echo @$response['error']; ?>
                             <?php endif; ?>
                             </div>
 

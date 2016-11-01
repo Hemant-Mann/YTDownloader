@@ -35,23 +35,31 @@ use YTDownloader\Helper\Convert as Convert;
 $url = "https://www.youtube.com/watch?v=YykjpeuMNEk";
 
 try {
+  // $opts = ['path' => '/home/user/Download', 'bitrate' => '128K'];
+  // $ytdl = new Downloader($url, $opts);
+
   $ytdl = new Downloader($url);
   
   // Get Available Qualities
   // $q = $ytdl->availableQualities();
   
-  // download the video
-  $quality = 22; $extension = 'mp4';
+  // Dont need to manually Mention the quality code just pass the human
+  // readable string - '144p', '240p' etc
+  // $file = $ytdl->download(22, 'mp4'); (prev version)
+
+  // Current and more readable
+  $mp4File = $ytdl->convert('mp4', ['type' => 'video', 'quality' => '360p', 'fullPath' => true]);
+  // $mp4File = $ytdl->convert('mp4', ['type' => 'video', 'quality' => '244p']);
   
-  // $file = $ytdl->download($quality, $extension);
+  $mp3File = $ytdl->convert('mp3', ['type' => 'audio', 'fullPath' => true]);
   
-  // Make mp3 from the video
-  // Convert::$quality = "128K"; // Set Mp3 Bitrate (optional)
-  $file = $ytdl->convert();
+  // prev Version
+  // $mp3File = Downloader::getDownloadPath() . $mp3File;
+
+  // Current Version -- Pass fullPath to convert function to get fullpath of the downloaded file
   
-  $file = Downloader::getDownloadPath() . $file;
-  
-  var_dump($file);
+  var_dump($mp3File);
+  var_dump($mp4File);
 } catch (\Exception $e) {
   echo print_r($e, true);
 }

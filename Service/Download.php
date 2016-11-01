@@ -6,6 +6,8 @@ use YTDownloader\Exceptions\YTDL as YTDL;
 use YTDownloader\Helper\Video as Video;
 use YTDownloader\Helper\Convert as Convert;
 use YTDownloader\Helper\Regex as Regex;
+use YTDownloader\Exceptions\Argument;
+use YTDownloader\Exceptions\Core;
 
 /**
  * This class will download youtube video
@@ -42,7 +44,9 @@ class Download {
 	 */
 	private static $_location = null;
 
-	public function __construct($url) {
+	public $bestMp3 = -1;
+
+	public function __construct($url, $opts = []) {
 		$id = Video::getId($url);
 		$url = "https://www.youtube.com/watch?v="; // manually fix the url
 		
@@ -51,7 +55,17 @@ class Download {
 		}
 
 		if (!self::$_location) {
-			self::getDownloadPath();
+			self::setDownloadPath();
+		}
+
+		if (count($opts) > 0) {
+			if (isset($opts['path'])) {
+				self::setDownloadPath($opts['path']);
+			}
+
+			if (isset($opts['bitrate'])) {
+				Convert::$bitrate = $opts['bitrate'];
+			}
 		}
 		$this->_url = $url . $id;
 		$this->_videoId = $id;
@@ -94,30 +108,65 @@ class Download {
 		foreach ($output as $key => $value) {
 			if ($key < 5) continue;
 
+			$code = Video::getCode($value);
+			if (preg_match("/(DASH\s(audio))/", $value, $match)) {
+				$this->bestMp3 = Video::compare($code, $this->bestMp3);
+				continue;
+			}
+
 			preg_match("/x([0-9]{3,4})/", $value, $match);
 
-			if (isset($match[1])) {
-				$code = (int) substr($value, 0, 3);
+			if (!isset($match[1])) continue;
 
-				if (!preg_match("/(DASH\s(video|audio))|only/", $value)) {
-					preg_match("/^[0-9]{0,3}\s*(\w+)/", $value, $f);
-					$this->_formats[$match[1]][$f[1]] = $code;	
-				}
+			if (!preg_match("/(DASH\s(video|audio))|only/", $value)) {
+				preg_match("/^[0-9]{0,3}\s*(\w+)/", $value, $f);
+				$this->_formats[$match[1]][$f[1]] = $code;	
 			}
+		}
+		if ($this->bestMp3 === -1) {
+			$this->bestMp3 = 140;
 		}
 	}
 
 	/**
 	 * Converts the video to given format
 	 */
-	public function convert($fmt = "mp3") {
+	public function convert($fmt = "mp3", $opts = []) {
 		Regex::validate(array('extension' => $fmt));
 		$filename = $this->_videoId . ".{$fmt}";
 		$this->_converted = self::$_location . $filename;
+		
 		if (!file_exists($this->_converted)) {
-			$this->_download();
-			Convert::To($fmt, $this->_file, $this->_converted);
+			$type = isset($opts['type']) ? $opts['type'] : 'audio';
+			switch ($type) {
+				case 'audio':
+					if ($this->bestMp3 !== -1) {
+						$code = $this->bestMp3; $ext = "mp4";
+					} else {
+						$code = 251; $ext = "webm";
+					}
+					$this->_download($code, $ext);
+					Convert::toAudio($fmt, $this->_file, $this->_converted);		
+					break;
+
+				case 'video':
+					$quality = isset($opts['quality']) ? $opts['quality'] : '360p';
+					$qInfo = Video::getQualities();
+					if (!array_key_exists($quality, $qInfo)) {
+						var_dump($qInfo);
+						var_dump($quality);
+						throw new Argument('Invalid Video quality supplied');
+					}
+					$arr = $qInfo[$quality];
+					$this->_download($arr['code'], $arr['ext']);
+					Convert::toVideo($fmt, $this->_file, $this->_converted);
+					break;
+			}
 			unlink($this->_file); // remove the video used for converting
+		}
+
+		if (isset($opts['fullPath'])) {
+			return $this->_converted;
 		}
 		return $filename;
 	}
@@ -126,7 +175,12 @@ class Download {
 		return $this->_videoId;
 	}
 
-	public static function setDownloadPath($path) {
+	public static function setDownloadPath($path = null) {
+		if (!$path) {
+			$path = dirname(dirname(__FILE__)) . "/downloads/";
+		}
+		$path = rtrim($path, "/") . "/";
+
 		if (!is_dir($path)) {
 			throw new YTDL("Invalid Download Location Specified!!");
 		}
@@ -134,9 +188,6 @@ class Download {
 	}
 
 	public static function getDownloadPath() {
-		if (!isset(self::$_location)) {
-			self::$_location = dirname(dirname(__FILE__)) . "/downloads/";
-		}
 		return self::$_location;
 	}
 
